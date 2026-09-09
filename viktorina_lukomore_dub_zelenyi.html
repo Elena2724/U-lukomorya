@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Викторина «У лукоморья дуб зелёный»</title>
+<style>
+  :root{
+    --bg:#f7f4ff;
+    --card:#ffffff;
+    --text:#2d3150;
+    --muted:#70758f;
+    --accent:#6c5ce7;
+    --accent2:#ffb84d;
+    --good:#2fbf71;
+    --bad:#ef5b68;
+    --line:#e7e4f5;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family: "Trebuchet MS", "Arial Rounded MT Bold", Arial, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 15% 10%, #fff2bd 0 9%, transparent 10%),
+      radial-gradient(circle at 90% 15%, #dff6ff 0 10%, transparent 11%),
+      linear-gradient(135deg,#f9f7ff,#eaf8ff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .app{width:min(900px,100%)}
+  .card{
+    background:rgba(255,255,255,.94);
+    border:3px solid rgba(108,92,231,.12);
+    border-radius:30px;
+    box-shadow:0 18px 50px rgba(72,62,135,.16);
+    overflow:hidden;
+  }
+  header{
+    padding:26px 28px 20px;
+    background:linear-gradient(135deg,#6c5ce7,#8d7cf5);
+    color:white;
+    position:relative;
+  }
+  header:after{
+    content:"🌳  🐈  ⭐  🧜‍♀️";
+    position:absolute;
+    right:22px; bottom:12px;
+    font-size:27px;
+    opacity:.75;
+  }
+  h1{margin:0 0 7px;font-size:clamp(25px,5vw,39px);line-height:1.08}
+  .subtitle{margin:0;font-size:17px;opacity:.92}
+  .content{padding:25px}
+  .topline{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:14px}
+  .progress-wrap{flex:1}
+  .progress{
+    height:14px;background:#eeeafc;border-radius:99px;overflow:hidden;
+  }
+  .progress-bar{
+    height:100%;width:0;background:linear-gradient(90deg,#ffb84d,#ffdd72);
+    border-radius:99px;transition:width .35s ease;
+  }
+  .counter,.score{
+    font-weight:800;font-size:15px;white-space:nowrap;
+  }
+  .question{
+    font-size:clamp(23px,4vw,32px);
+    line-height:1.2;
+    margin:22px 0 20px;
+    font-weight:900;
+  }
+  .answers{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  button{
+    font:inherit;
+    border:0;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .answer{
+    min-height:70px;
+    padding:14px 17px;
+    border-radius:19px;
+    background:#f8f7fd;
+    border:3px solid var(--line);
+    color:var(--text);
+    text-align:left;
+    font-weight:800;
+    font-size:18px;
+    transition:transform .12s, box-shadow .12s, background .2s, border-color .2s;
+  }
+  .answer:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 18px rgba(80,70,140,.12)}
+  .answer:active:not(:disabled){transform:scale(.98)}
+  .answer:disabled{cursor:default}
+  .answer.correct{background:#dcf8e8;border-color:var(--good);color:#147044}
+  .answer.wrong{background:#ffe1e5;border-color:var(--bad);color:#a52e3b}
+  .answer .mark{float:right;font-size:25px}
+  .feedback{
+    min-height:58px;margin-top:17px;padding:14px 16px;border-radius:17px;
+    background:#f3f1ff;font-weight:800;font-size:17px;display:flex;align-items:center;
+  }
+  .feedback.good{background:#e5faee;color:#147044}
+  .feedback.bad{background:#fff0f2;color:#a52e3b}
+  .next{
+    display:block;margin:17px 0 0 auto;padding:14px 24px;border-radius:16px;
+    background:var(--accent);color:white;font-weight:900;font-size:18px;
+    box-shadow:0 7px 0 #5141c4;
+  }
+  .next:active{transform:translateY(3px);box-shadow:0 4px 0 #5141c4}
+  .next[hidden]{display:none}
+  .result{text-align:center;padding:10px 4px 20px}
+  .trophy{font-size:80px;line-height:1;margin:8px 0}
+  .result h2{font-size:34px;margin:10px 0}
+  .big-score{font-size:27px;font-weight:900;margin:14px 0}
+  .restart{
+    padding:15px 28px;border-radius:17px;background:var(--accent);color:white;
+    font-size:19px;font-weight:900;box-shadow:0 7px 0 #5141c4;
+  }
+  .small{color:var(--muted);font-size:15px;margin-top:15px}
+  .hidden{display:none}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .piece{position:absolute;top:-20px;font-size:22px;animation:fall 1.8s linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(500deg);opacity:0}}
+  @media(max-width:620px){
+    .answers{grid-template-columns:1fr}
+    .content{padding:18px}
+    header{padding:23px 20px 20px}
+    header:after{display:none}
+    .topline{align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <header>
+      <h1>🌳 У лукоморья дуб зелёный</h1>
+      <p class="subtitle">Весёлая викторина по сказочному отрывку А. С. Пушкина</p>
+    </header>
+
+    <main class="content">
+      <section id="quiz">
+        <div class="topline">
+          <div class="progress-wrap"><div class="progress"><div id="bar" class="progress-bar"></div></div></div>
+          <div id="counter" class="counter">1 / 10</div>
+          <div id="score" class="score">⭐ 0</div>
+        </div>
+
+        <div id="question" class="question"></div>
+        <div id="answers" class="answers"></div>
+        <div id="feedback" class="feedback">Выбери ответ — проверим!</div>
+        <button id="next" class="next" hidden>Следующий вопрос →</button>
+      </section>
+
+      <section id="result" class="result hidden">
+        <div id="trophy" class="trophy">🏆</div>
+        <h2 id="resultTitle">Молодец!</h2>
+        <div id="bigScore" class="big-score"></div>
+        <p id="resultText"></p>
+        <button class="restart" id="restart">🔄 Играть ещё раз</button>
+        <div class="small">Можно пройти викторину снова и попробовать набрать больше ⭐</div>
+      </section>
+    </main>
+  </div>
+</div>
+<div id="confetti" class="confetti"></div>
+
+<script>
+const questions = [
+  {
+    q: "Что растёт у лукоморья?",
+    a: ["Зелёный дуб", "Берёзка", "Ёлочка", "Ромашка"],
+    correct: 0,
+    good: "Правильно! 🌳 У лукоморья растёт зелёный дуб."
+  },
+  {
+    q: "Что находится на дубе?",
+    a: ["Золотая цепь", "Красный шар", "Колокольчик", "Птичье гнездо"],
+    correct: 0,
+    good: "Верно! ✨ На дубе висит золотая цепь."
+  },
+  {
+    q: "Кто ходит по цепи?",
+    a: ["Кот учёный", "Зайчик", "Лиса", "Медведь"],
+    correct: 0,
+    good: "Точно! 🐈 По цепи ходит кот учёный."
+  },
+  {
+    q: "Что рассказывает кот, когда ходит направо?",
+    a: ["Сказку", "Песню", "Стихотворение", "Загадку"],
+    correct: 0,
+    good: "Правильно! 📖 Кот рассказывает сказку."
+  },
+  {
+    q: "А что делает кот, когда идёт налево?",
+    a: ["Песнь заводит", "Спит", "Прыгает", "Прячется"],
+    correct: 0,
+    good: "Верно! 🎵 Налево кот песнь заводит."
+  },
+  {
+    q: "Что находится там, где дорожки неизвестных зверей?",
+    a: ["Следы невиданных зверей", "Маленький домик", "Большой мост", "Синий цветок"],
+    correct: 0,
+    good: "Правильно! 🐾 Там можно увидеть следы невиданных зверей."
+  },
+  {
+    q: "Кто появляется из воды?",
+    a: ["Русалка", "Принцесса", "Фея", "Белочка"],
+    correct: 0,
+    good: "Да! 🧜‍♀️ Там появляется русалка."
+  },
+  {
+    q: "На чём русалка сидит?",
+    a: ["На ветвях", "На камне", "На лодке", "На облаке"],
+    correct: 0,
+    good: "Верно! 🌿 Русалка сидит на ветвях."
+  },
+  {
+    q: "Что делает Баба-яга?",
+    a: ["Идёт в ступе", "Плывёт на корабле", "Летит на шаре", "Танцует"],
+    correct: 0,
+    good: "Правильно! 🧹 Баба-яга идёт в ступе."
+  },
+  {
+    q: "Какой герой лежит на песке и грызёт орешки?",
+    a: ["Белка", "Кот", "Волк", "Лебедь"],
+    correct: 0,
+    good: "Молодец! 🐿️ Белка там грызёт орешки."
+  }
+];
+
+let index = 0;
+let score = 0;
+let answered = false;
+
+const $ = id => document.getElementById(id);
+const questionEl = $("question");
+const answersEl = $("answers");
+const feedbackEl = $("feedback");
+const nextEl = $("next");
+const counterEl = $("counter");
+const scoreEl = $("score");
+const barEl = $("bar");
+
+function render() {
+  answered = false;
+  const item = questions[index];
+  questionEl.textContent = item.q;
+  counterEl.textContent = `${index + 1} / ${questions.length}`;
+  scoreEl.textContent = `⭐ ${score}`;
+  barEl.style.width = `${(index / questions.length) * 100}%`;
+  feedbackEl.className = "feedback";
+  feedbackEl.textContent = "Выбери ответ — проверим!";
+  nextEl.hidden = true;
+  nextEl.textContent = index === questions.length - 1 ? "Показать результат 🎉" : "Следующий вопрос →";
+  answersEl.innerHTML = "";
+
+  item.a.forEach((answer, i) => {
+    const btn = document.createElement("button");
+    btn.className = "answer";
+    btn.innerHTML = `${String.fromCharCode(65+i)}. ${answer}`;
+    btn.addEventListener("click", () => choose(i));
+    answersEl.appendChild(btn);
+  });
+}
+
+function choose(choice) {
+  if (answered) return;
+  answered = true;
+  const item = questions[index];
+  const buttons = [...answersEl.children];
+  buttons.forEach(b => b.disabled = true);
+
+  if (choice === item.correct) {
+    score++;
+    buttons[choice].classList.add("correct");
+    buttons[choice].innerHTML += ' <span class="mark">✓</span>';
+    feedbackEl.className = "feedback good";
+    feedbackEl.textContent = item.good;
+    scoreEl.textContent = `⭐ ${score}`;
+    celebrate(false);
+  } else {
+    buttons[choice].classList.add("wrong");
+    buttons[choice].innerHTML += ' <span class="mark">✗</span>';
+    buttons[item.correct].classList.add("correct");
+    buttons[item.correct].innerHTML += ' <span class="mark">✓</span>';
+    feedbackEl.className = "feedback bad";
+    feedbackEl.textContent = `Почти! Правильный ответ: «${item.a[item.correct]}».`;
+  }
+  barEl.style.width = `${((index + 1) / questions.length) * 100}%`;
+  nextEl.hidden = false;
+}
+
+nextEl.addEventListener("click", () => {
+  if (!answered) return;
+  index++;
+  if (index < questions.length) render();
+  else showResult();
+});
+
+$("restart").addEventListener("click", () => {
+  index = 0;
+  score = 0;
+  $("quiz").classList.remove("hidden");
+  $("result").classList.add("hidden");
+  render();
+});
+
+function showResult() {
+  $("quiz").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  $("bigScore").textContent = `Твой результат: ${score} из ${questions.length} ⭐`;
+  let title, text, trophy;
+  if (score === 10) {
+    trophy = "🏆"; title = "Супер! Настоящий знаток!";
+    text = "Ты отлично знаешь сказочный мир Пушкина!";
+  } else if (score >= 7) {
+    trophy = "🌟"; title = "Очень здорово!";
+    text = "Ты прекрасно справился! Ещё немного — и будет рекорд.";
+  } else if (score >= 4) {
+    trophy = "😊"; title = "Хорошая работа!";
+    text = "Ты многое вспомнил. Попробуй ещё раз — получится ещё лучше!";
+  } else {
+    trophy = "🌱"; title = "Начало положено!";
+    text = "Не расстраивайся! Давай перечитаем сказочный отрывок и сыграем ещё раз.";
+  }
+  $("trophy").textContent = trophy;
+  $("resultTitle").textContent = title;
+  $("resultText").textContent = text;
+  celebrate(true);
+}
+
+function celebrate(big) {
+  const box = $("confetti");
+  box.innerHTML = "";
+  const symbols = ["⭐","✨","🌟","🍀","🎈"];
+  const count = big ? 45 : 8;
+  for(let i=0;i<count;i++){
+    const p = document.createElement("div");
+    p.className = "piece";
+    p.textContent = symbols[Math.floor(Math.random()*symbols.length)];
+    p.style.left = Math.random()*100 + "vw";
+    p.style.animationDelay = Math.random()*.35 + "s";
+    p.style.fontSize = (16 + Math.random()*18) + "px";
+    box.appendChild(p);
+  }
+  setTimeout(()=>box.innerHTML="",2200);
+}
+
+render();
+</script>
+</body>
+</html>
