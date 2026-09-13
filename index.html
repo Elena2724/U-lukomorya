@@ -235,6 +235,7 @@ const questions = [
 let index = 0;
 let score = 0;
 let answered = false;
+let shuffledAnswers = [];
 
 const $ = id => document.getElementById(id);
 const questionEl = $("question");
@@ -258,10 +259,22 @@ function render() {
   nextEl.textContent = index === questions.length - 1 ? "Показать результат 🎉" : "Следующий вопрос →";
   answersEl.innerHTML = "";
 
-  item.a.forEach((answer, i) => {
+  // Перемешиваем варианты, сохраняя признак правильного ответа.
+  shuffledAnswers = item.a.map((text, originalIndex) => ({
+    text,
+    correct: originalIndex === item.correct
+  }));
+
+  for (let i = shuffledAnswers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledAnswers[i], shuffledAnswers[j]] =
+      [shuffledAnswers[j], shuffledAnswers[i]];
+  }
+
+  shuffledAnswers.forEach((answer, i) => {
     const btn = document.createElement("button");
     btn.className = "answer";
-    btn.innerHTML = `${String.fromCharCode(65+i)}. ${answer}`;
+    btn.innerHTML = `${String.fromCharCode(65+i)}. ${answer.text}`;
     btn.addEventListener("click", () => choose(i));
     answersEl.appendChild(btn);
   });
@@ -274,7 +287,10 @@ function choose(choice) {
   const buttons = [...answersEl.children];
   buttons.forEach(b => b.disabled = true);
 
-  if (choice === item.correct) {
+  const selected = shuffledAnswers[choice];
+  const correctIndex = shuffledAnswers.findIndex(answer => answer.correct);
+
+  if (selected.correct) {
     score++;
     buttons[choice].classList.add("correct");
     buttons[choice].innerHTML += ' <span class="mark">✓</span>';
@@ -285,11 +301,12 @@ function choose(choice) {
   } else {
     buttons[choice].classList.add("wrong");
     buttons[choice].innerHTML += ' <span class="mark">✗</span>';
-    buttons[item.correct].classList.add("correct");
-    buttons[item.correct].innerHTML += ' <span class="mark">✓</span>';
+    buttons[correctIndex].classList.add("correct");
+    buttons[correctIndex].innerHTML += ' <span class="mark">✓</span>';
     feedbackEl.className = "feedback bad";
-    feedbackEl.textContent = `Почти! Правильный ответ: «${item.a[item.correct]}».`;
+    feedbackEl.textContent = `Почти! Правильный ответ: «${shuffledAnswers[correctIndex].text}».`;
   }
+
   barEl.style.width = `${((index + 1) / questions.length) * 100}%`;
   nextEl.hidden = false;
 }
